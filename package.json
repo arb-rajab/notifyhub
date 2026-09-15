@@ -43,7 +43,7 @@
     "cors": "^2.8.6",
     "dotenv": "^16.6.1",
     "express": "^5.2.1",
-    "express-rate-limit": "^7.5.1",
+    "express-rate-limit": "^8.7.0",
     "graphql": "^16.14.2",
     "graphql-depth-limit": "^1.1.0",
     "graphql-scalars": "^1.26.0",
