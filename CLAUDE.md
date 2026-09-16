@@ -102,10 +102,28 @@ nothing else changes.
 ## Things this session could not verify — don't assume they were checked
 
 - GitHub-native Dependabot alerts (only `npm audit` was actually run —
-  see `docs/project-memory/08-risk.md` R-7).
+  see `docs/project-memory/08-risk.md` R-7). A later session (see
+  "dependency-review CI job" below) confirmed there is no
+  Dependabot-alerts-listing tool in this session's GitHub MCP tool set
+  either (`get_me`/`list_*`/`search_*` cover issues, PRs, branches,
+  commits, actions — nothing named alerts/dependabot). If a future
+  session gets a tool that can enumerate them, do it once and update
+  `08-risk.md` R-7 rather than re-flagging it as unknown every time.
 - Whether PostgreSQL is over-represented elsewhere in the portfolio (this
   session's GitHub access was scoped to this repo only — see
   `docs/project-memory/07-decisions.md` ADR-006 and `08-risk.md` R-1).
 
-If either becomes checkable in a future session, do it once and update
-the relevant doc rather than re-flagging it as unknown every time.
+## `dependency-review` CI job — restored, don't re-remove without checking the setting first
+
+The job was removed in commit `22f03af` because the repo's "Dependency
+graph" setting (`settings/security_analysis`) wasn't enabled, which made
+`actions/dependency-review-action` fail outright with "Dependency review
+is not supported on this repository." A later session restored the job
+verbatim (`.github/workflows/ci.yml`, gated on `pull_request`) after the
+user confirmed directly that the setting is now enabled — that
+confirmation was taken as given, not independently re-verified, since
+GitHub repo Settings pages aren't reachable through this session's
+tooling either. If the job ever fails again with that same "Dependency
+graph" error, that setting was toggled back off — don't reflexively
+re-remove the job; check with the user first, since this is now the
+second time the same root cause would have caused it.
