@@ -120,7 +120,7 @@ read ADR-008 in `docs/project-memory/07-decisions.md` first.
   `notifyhub`/`notifyhub_dev`/`notifyhub_test` roles/DBs from the section
   above — `prisma migrate dev` was only ever run by hand against
   `notifyhub_dev`. Run `DATABASE_URL=postgresql://notifyhub:notifyhub_dev_pw@localhost:5432/notifyhub_test?schema=public
-  npx prisma migrate deploy` once before `npm test`, or you'll see a
+npx prisma migrate deploy` once before `npm test`, or you'll see a
   confusing "table `device_tokens` does not exist" error on every test
   file, not just device-token ones (because `tests/setup/db.ts`'s
   `resetDatabase()` touches it in every test's `beforeEach`).
@@ -143,7 +143,7 @@ read ADR-008 in `docs/project-memory/07-decisions.md` first.
   an EC key in a test — it won't be a valid key and will fail signing
   with a confusing error. Generate a real throwaway one at test-run time
   with `crypto.generateKeyPairSync('ec', { namedCurve: 'prime256v1'
-  })` (see `tests/unit/apnsJwtProvider.test.ts` /
+})` (see `tests/unit/apnsJwtProvider.test.ts` /
   `tests/unit/apnsHttpClient.test.ts`).
 
 ## Things this session could not verify — don't assume they were checked

@@ -231,7 +231,7 @@ dependency. Reasons:
   testing harder, not easier, since most hide the HTTP/2 session entirely.
 - ES256 JWT signing for the bearer token reuses the `jsonwebtoken` package
   already a dependency for ADR-003's access tokens (`src/services/push/
-  apns/jwtProvider.ts`), rather than pulling in a second JWT library.
+apns/jwtProvider.ts`), rather than pulling in a second JWT library.
 
 **Decision, part 2 - verification posture, permanent, not a gap to close
 later.** Live APNs credentials (a `.p8` signing key, Key ID, Team ID, real
