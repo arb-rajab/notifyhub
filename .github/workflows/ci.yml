@@ -69,9 +69,9 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  # A `dependency-review` job (actions/dependency-review-action) was tried
-  # here but removed: it requires the repository's "Dependency graph"
-  # setting (github.com/<owner>/<repo>/settings/security_analysis) to be
-  # enabled, which is an account-level toggle outside this workflow's and
-  # this session's control. Dependabot (.github/dependabot.yml) already
-  # covers ongoing dependency update/vulnerability tracking for this repo.
+  dependency-review:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/dependency-review-action@v4
