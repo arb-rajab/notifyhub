@@ -1,0 +1,77 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  displayName  String
+  role         Role     @default(USER)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  ownedChannels Channel[]      @relation("ChannelOwner")
+  subscriptions Subscription[]
+  notifications Notification[] @relation("NotificationAuthor")
+
+  @@map("users")
+}
+
+model Channel {
+  id          String   @id @default(uuid())
+  slug        String   @unique
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+
+  ownerId String
+  owner   User   @relation("ChannelOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+
+  subscriptions Subscription[]
+  notifications Notification[]
+
+  @@map("channels")
+}
+
+model Subscription {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  channelId String
+  channel   Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, channelId])
+  @@index([channelId])
+  @@map("subscriptions")
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  title     String
+  body      String
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  channelId String
+  channel   Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  authorId String
+  author   User   @relation("NotificationAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([channelId, createdAt])
+  @@map("notifications")
+}
