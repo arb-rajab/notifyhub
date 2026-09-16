@@ -36,10 +36,21 @@ portfolio piece at this stage.
       needs to run more than one instance — see ADR-005 and
       [08-risk.md](./08-risk.md) R-2. Not started; no current requirement for
       it.
-- [ ] **notifyhub-ios coupling:** implement `ApnsPushChannel implements
+- [x] **notifyhub-ios coupling:** implement `ApnsPushChannel implements
 PushChannel` (`src/services/push/types.ts`) and register it in
       `notificationDispatcher`'s channel list
-      (`src/services/push/dispatcher.ts`) once the notifyhub-ios companion
-      repo needs real device push. This is the concrete, designed-for follow-up
-      from ADR-005 — explicitly out of scope for this session per the task
-      brief.
+      (`src/services/push/dispatcher.ts`). Done this session — see ADR-008.
+
+## Near-term (added this session)
+
+- [ ] A scheduled cleanup job for stale `DeviceToken` rows (revoked more
+      than N days ago, or never seen again after a long silence) — nothing
+      prunes these today, they just accumulate with `revokedAt` set.
+- [ ] Rate-limit `registerDeviceToken`/`rotateDeviceToken` specifically (the
+      general `/graphql` rate limiter covers it today, but a tighter,
+      per-mutation limit would catch a misbehaving client hammering
+      registration harder than the general query traffic).
+- [ ] A DataLoader-style batch for `ApnsPushChannel.publish`'s
+      `deviceToken.findMany` if a channel with a very large subscriber count
+      ever makes per-notification device-token fan-out a real bottleneck —
+      not needed at current scale, same reasoning as R-6.

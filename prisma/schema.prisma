@@ -12,6 +12,10 @@ enum Role {
   ADMIN
 }
 
+enum DevicePlatform {
+  IOS
+}
+
 model User {
   id           String   @id @default(uuid())
   email        String   @unique
@@ -24,6 +28,7 @@ model User {
   ownedChannels Channel[]      @relation("ChannelOwner")
   subscriptions Subscription[]
   notifications Notification[] @relation("NotificationAuthor")
+  deviceTokens  DeviceToken[]
 
   @@map("users")
 }
@@ -74,4 +79,24 @@ model Notification {
 
   @@index([channelId, createdAt])
   @@map("notifications")
+}
+
+/// A push-registered device, keyed by its provider token (currently only
+/// APNs/iOS). Rotation replaces the token on the same logical registration;
+/// revocation (explicit, or automatic on an APNs "token invalid" response -
+/// see ApnsPushChannel) is a soft delete via revokedAt so history isn't lost.
+model DeviceToken {
+  id         String         @id @default(uuid())
+  token      String         @unique
+  platform   DevicePlatform @default(IOS)
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+  lastSeenAt DateTime       @default(now())
+  revokedAt  DateTime?
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("device_tokens")
 }
