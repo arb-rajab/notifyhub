@@ -1,5 +1,7 @@
 import { logger } from '../../utils/logger';
+import { prisma } from '../../db/prisma';
 import { WebSocketPushChannel } from './websocketChannel';
+import { ApnsPushChannel } from './apnsChannel';
 import type { PushChannel, PushEvent } from './types';
 
 /**
@@ -26,4 +28,7 @@ export class NotificationDispatcher {
   }
 }
 
-export const notificationDispatcher = new NotificationDispatcher([new WebSocketPushChannel()]);
+export const notificationDispatcher = new NotificationDispatcher([
+  new WebSocketPushChannel(),
+  new ApnsPushChannel(prisma),
+]);

@@ -3,6 +3,7 @@ import { scalarTypeDefs } from './scalars';
 import { userTypeDefs } from './user';
 import { channelTypeDefs } from './channel';
 import { notificationTypeDefs } from './notification';
+import { deviceTokenTypeDefs } from './deviceToken';
 
 export const typeDefs = [
   rootTypeDefs,
@@ -10,4 +11,5 @@ export const typeDefs = [
   userTypeDefs,
   channelTypeDefs,
   notificationTypeDefs,
+  deviceTokenTypeDefs,
 ];
