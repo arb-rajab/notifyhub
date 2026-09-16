@@ -54,3 +54,31 @@ history as an error or gap to paper over.
 - If/when `notifyhub-ios` work begins, start from ADR-005 and the backlog
   item under "Larger, deliberately deferred" rather than redesigning the
   push path from scratch.
+
+## Update — APNs / device-token follow-up session
+
+- The `notifyhub-ios` coupling backlog item is done: `ApnsPushChannel`
+  (`src/services/push/apnsChannel.ts` + `src/services/push/apns/*`) is a
+  real `PushChannel` implementation, registered in
+  `src/services/push/dispatcher.ts` alongside `WebSocketPushChannel`.
+  Device-token lifecycle (`registerDeviceToken`/`rotateDeviceToken`/
+  `revokeDeviceToken`/`myDeviceTokens`) is a new GraphQL mutation/query
+  set (`src/graphql/{typeDefs,resolvers}/deviceToken.ts`,
+  `src/services/deviceTokenService.ts`), consistent with ADR-001/002's
+  GraphQL-only surface. See ADR-008 for the design and the permanent
+  no-live-credentials-anywhere-automated posture.
+- 46/46 tests pass (20 new), lint/format/typecheck/build/`npm audit` all
+  clean. Branch `claude/notifyhub-apns-ios-app-9paohp`, shared with the
+  `notifyhub-ios` repo per this session's coupled-work brief.
+- **What a future session should not re-litigate:** the choice of a raw
+  `http2`-based APNs client over `node-apn` (ADR-008), and the mock/
+  protocol-level test posture for APNs (also ADR-008, R-8 in
+  [08-risk.md](./08-risk.md)) — these are deliberate, not placeholders.
+- **What this session could not do:** enumerate GitHub-native Dependabot
+  alerts (same limitation as R-7 — only `npm audit` is checkable from
+  here); verify real APNs delivery to a physical device (R-8, permanent).
+- If a future session extends `notifyhub-ios`'s push scope (e.g. adding
+  background/silent push, or a "mark read" round-trip), start from
+  `PushEvent`/`buildApnsPayload` in `apnsChannel.ts` — the payload's
+  `notificationId`/`channelSlug` keys are what the iOS client deep-links
+  on, so keep both sides of that contract in sync if either changes.

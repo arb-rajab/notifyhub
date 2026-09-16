@@ -99,6 +99,53 @@ future device-push channel is meant to be a new file implementing
 `PushChannel`, registered in `src/services/push/dispatcher.ts`, and
 nothing else changes.
 
+## APNs / device-token work is done — read ADR-008 before touching it again
+
+`src/services/push/apnsChannel.ts` + `src/services/push/apns/{config,
+jwtProvider,httpClient,errors}.ts` is a real, tested `ApnsPushChannel
+implements PushChannel`, wired into `src/services/push/dispatcher.ts`.
+Device-token GraphQL mutations
+(`registerDeviceToken`/`rotateDeviceToken`/`revokeDeviceToken`/
+`myDeviceTokens`) already exist in
+`src/graphql/{typeDefs,resolvers}/deviceToken.ts` +
+`src/services/deviceTokenService.ts`. Don't re-derive this from ADR-005 —
+read ADR-008 in `docs/project-memory/07-decisions.md` first.
+
+- **The `DevicePlatform` enum only has `IOS` today.** Adding Android/FCM
+  later means widening that enum and adding a second `PushChannel`, not
+  restructuring `DeviceToken` — the model is already generic (token,
+  platform, revokedAt) on purpose.
+- **A brand-new container's `notifyhub_test` Postgres database will be
+  missing the `device_tokens` table** even after recreating the
+  `notifyhub`/`notifyhub_dev`/`notifyhub_test` roles/DBs from the section
+  above — `prisma migrate dev` was only ever run by hand against
+  `notifyhub_dev`. Run `DATABASE_URL=postgresql://notifyhub:notifyhub_dev_pw@localhost:5432/notifyhub_test?schema=public
+npx prisma migrate deploy` once before `npm test`, or you'll see a
+  confusing "table `device_tokens` does not exist" error on every test
+  file, not just device-token ones (because `tests/setup/db.ts`'s
+  `resetDatabase()` touches it in every test's `beforeEach`).
+- **Testing an HTTP/2 client without mocks:** `http2.connect()` picks
+  plaintext h2c or TLS h2 based on the URL scheme, so
+  `tests/unit/apnsHttpClient.test.ts` runs a real local
+  `http2.createServer()` (plain `http://`) and points `ApnsHttpClient` at
+  it — this is a real protocol-level test, not a mock, and is the pattern
+  to reuse for any future raw-HTTP/2 client in this repo. Don't reach for
+  `nock`/`jest.mock('http2')` instead; it would test less than this does
+  for no less effort.
+- **Never put real APNs credentials (`APNS_KEY_ID`, `APNS_TEAM_ID`,
+  `APNS_BUNDLE_ID`, `APNS_PRIVATE_KEY`) in this repo, `.env.example`,
+  CI secrets, or any automated session's environment.** This is
+  permanent by design (ADR-008), not a TODO — `loadApnsConfigFromEnv`
+  returning `null` and `ApnsPushChannel` no-op'ing is the intended
+  behavior everywhere except an operator's own machine. Don't "fix" the
+  no-op by wiring in a real key to make a demo look more complete.
+- **ES256 test keys:** don't hardcode a fabricated-looking PEM string for
+  an EC key in a test — it won't be a valid key and will fail signing
+  with a confusing error. Generate a real throwaway one at test-run time
+  with `crypto.generateKeyPairSync('ec', { namedCurve: 'prime256v1'
+})` (see `tests/unit/apnsJwtProvider.test.ts` /
+  `tests/unit/apnsHttpClient.test.ts`).
+
 ## Things this session could not verify — don't assume they were checked
 
 - GitHub-native Dependabot alerts (only `npm audit` was actually run —

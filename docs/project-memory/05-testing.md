@@ -51,6 +51,28 @@ tests/
   and an unauthenticated connection is rejected too — both assertions are
   made by awaiting the same live protocol exchange, not a resolver unit
   test.
+- **`tests/integration/deviceTokens.test.ts`** —
+  register/rotate/revoke/list `DeviceToken` mutations: auth required;
+  registering the same token under a different account reassigns it
+  (device reinstalled under a new user); rotate/revoke require the
+  caller to own the token being changed.
+- **`tests/unit/apnsJwtProvider.test.ts`** — the ES256 provider-auth JWT
+  carries the right `kid`/`iss`, is reused within Apple's ~1h window, and
+  is re-minted once that window passes (a fresh EC key pair is generated
+  at test-run time via Node's `crypto` — no key is committed anywhere).
+- **`tests/unit/apnsHttpClient.test.ts`** — see ADR-008 for why this is
+  a protocol-level test against a real local `http2` server rather than
+  a mock: asserts the actual request shape (`:path`, `apns-topic`,
+  `authorization`, JSON payload), exponential retry/backoff on a
+  transient 503 that later recovers, giving up after `maxRetries` on a
+  persistent 500, and `ApnsTokenInvalidError` (no retry) specifically on
+  400 `BadDeviceToken`/410 `Unregistered` but not on other 4xx reasons.
+- **`tests/integration/apnsChannel.test.ts`** — `ApnsPushChannel`
+  no-ops when unconfigured; sends only to a channel's subscribers' active
+  (non-revoked) device tokens, with the expected payload shape including
+  the `notificationId`/`channelSlug` deep-link keys; marks a `DeviceToken`
+  `revokedAt` when the (test-double) client reports it invalid; never
+  throws when a subscriber has no device tokens.
 
 ## Running tests
 
@@ -75,6 +97,17 @@ applied via `prisma migrate deploy`). `npm run typecheck`,
 `npm run lint`, and `npm run build` are all clean. `npm run build`'s
 output was smoke-tested by starting the compiled server and hitting
 `/healthz` and a live `channels` query over HTTP.
+
+## Verified in the APNs/device-token follow-up session
+
+All 11 suites / 46 tests pass locally (the original 7/26 plus 4 new
+suites / 20 new tests for device tokens and APNs). `npm run
+format:check`, `npm run lint`, `npm run typecheck`, `npm run build`, and
+`npm audit` (0 vulnerabilities) are all clean. See ADR-008 for why the
+APNs tests are protocol-level (a real local `http2` server) rather than
+either mocks or live Apple delivery — the latter is a permanent,
+by-design gap (see [08-risk.md](./08-risk.md) R-8), not something a
+future session should try to close in this sandbox.
 
 ## Known gaps
 

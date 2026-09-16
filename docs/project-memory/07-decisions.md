@@ -199,3 +199,82 @@ the root config and restricts `rootDir`/`include` to `src/` so
 `npm run build` doesn't try to emit compiled output for `tests/`, which is
 type-checked (`tsc --noEmit` against the root config, which includes both
 `src` and `tests`) but never built.
+
+---
+
+## ADR-008: A raw HTTP/2 APNs client (not `node-apn`/`@parse/node-apn`), and mock/protocol-level verification as the permanent proof of correctness
+
+**Context.** ADR-005 deliberately designed the `PushChannel` interface so a
+device-push channel could be added later without touching the publish path,
+schema, or resolvers - this session is that follow-up, for the
+`notifyhub-ios` companion app's real APNs delivery. Two separate questions
+had to be answered: how to talk to APNs, and how to prove the result works
+without ever holding real Apple credentials anywhere this session (or any
+automated session) can reach.
+
+**Decision, part 1 - transport.** `src/services/push/apns/httpClient.ts`
+implements Apple's HTTP/2 provider API directly on top of Node's built-in
+`http2` module, rather than adding `node-apn` or `@parse/node-apn` as a
+dependency. Reasons:
+
+- Apple's provider API is a small, well-documented HTTP/2 surface (one
+  `POST /3/device/<token>` call, one bearer-JWT auth header, a handful of
+  `apns-*` headers, and JSON error bodies with a `reason` field) - not
+  large enough to justify an external dependency's transitive surface and
+  update cadence for this repo's scope.
+- Critically, `http2.connect()` picks plaintext HTTP/2 (h2c) or TLS HTTP/2
+  (h2) based on the URL scheme. Pointing the same client at `http://` lets
+  tests run a real local `http2.createServer()` and exercise the actual
+  request/response wire format - not a mocked transport - while production
+  use points the identical code at `https://api.sandbox.push.apple.com` or
+  `https://api.push.apple.com`. A wrapper library would make this dual-mode
+  testing harder, not easier, since most hide the HTTP/2 session entirely.
+- ES256 JWT signing for the bearer token reuses the `jsonwebtoken` package
+  already a dependency for ADR-003's access tokens (`src/services/push/
+apns/jwtProvider.ts`), rather than pulling in a second JWT library.
+
+**Decision, part 2 - verification posture, permanent, not a gap to close
+later.** Live APNs credentials (a `.p8` signing key, Key ID, Team ID, real
+device tokens from a physical iOS device) must never sit in this repo or in
+any CI-readable/automated environment. This mirrors the same posture the
+portfolio's pulsewatch project takes for its own production push
+credentials (its B-016): production push credentials are an operator-only
+secret, deliberately kept out of anything a repository or its automation
+can read, so that no compromised CI run or leaked repo secret can ever
+reach a real APNs account. `ApnsPushChannel` and `loadApnsConfigFromEnv`
+(`src/services/push/apns/config.ts`) are built around this: when the four
+required env vars aren't present - the expected state in this repo and its
+CI, always - the channel logs and no-ops rather than erroring, so
+publishing a notification never fails because of an absent device-push
+credential.
+
+The accepted proof of correctness is therefore protocol-level and
+behavioral, not live-delivery:
+
+- `tests/unit/apnsHttpClient.test.ts` runs a real local `http2` server and
+  asserts the actual request (`:path`, `apns-topic`, `authorization`,
+  payload shape), retry/backoff behavior on 429/5xx, and that 400
+  `BadDeviceToken`/410 `Unregistered` responses raise
+  `ApnsTokenInvalidError` without retrying.
+- `tests/integration/apnsChannel.test.ts` verifies the dispatch-side
+  behavior (which subscribers' device tokens get a push, that a revoked
+  token is skipped, that an APNs-reported invalid token gets marked
+  `revokedAt` in the database) with a test double standing in for the
+  already-protocol-tested HTTP client.
+
+No test in this repo, and no session working on it, can verify an actual
+push notification arriving on a physical device - that requires a real
+Apple Developer account, a real `.p8` key, and a real device, none of
+which can or should exist in this sandbox or its CI. This is recorded as a
+**permanent** limitation (not a "TODO: verify later") in
+[08-risk.md](./08-risk.md) R-8, exactly as pulsewatch-mobile documents its
+equivalent gap.
+
+**Consequences.** Adding APNs required zero changes to
+`NotificationService.publish`, the GraphQL schema, or the WebSocket
+channel - `ApnsPushChannel implements PushChannel` and one line in
+`src/services/push/dispatcher.ts`'s channel array, exactly as ADR-005
+predicted. The cost is that this repo can never claim "verified working
+push delivery" from within itself; anyone needing that assurance must run
+the app on a physical device with real credentials outside this sandbox,
+by design.
