@@ -7,8 +7,7 @@ import { WsRateLimiter } from '../../src/graphql/wsRateLimiter';
  * not just that prune() runs without throwing.
  */
 function trackedClientCount(limiter: WsRateLimiter): number {
-  return (limiter as unknown as { attemptsByClient: Map<string, number[]> }).attemptsByClient
-    .size;
+  return (limiter as unknown as { attemptsByClient: Map<string, number[]> }).attemptsByClient.size;
 }
 
 const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
