@@ -38,6 +38,8 @@ export function createWebSocketServer(
       return;
     }
 
+    rateLimiter.prune();
+
     const clientKey = req.socket.remoteAddress ?? 'unknown';
     const decision = rateLimiter.checkUpgrade(clientKey, wss.clients.size);
     if (!decision.allowed) {
