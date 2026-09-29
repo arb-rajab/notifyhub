@@ -6,7 +6,7 @@ on:
   pull_request:
     branches: [main]
   schedule:
-    - cron: "43 5 * * 1"
+    - cron: '43 5 * * 1'
 
 concurrency:
   group: codeql-${{ github.workflow }}-${{ github.ref }}
