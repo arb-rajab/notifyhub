@@ -159,12 +159,11 @@ npx prisma migrate deploy` once before `npm test`, or you'll see a
 - Whether PostgreSQL is over-represented elsewhere in the portfolio (this
   session's GitHub access was scoped to this repo only — see
   `docs/project-memory/07-decisions.md` ADR-006 and `08-risk.md` R-1).
-- Whether `main` has a branch protection rule requiring the right CI
-  checks (only the coarse `GET /repos/.../branches` `protected` boolean
-  could be read this session — confirmed `false`, i.e. no rule exists at
-  all — no tool available exposed the full branch-protection/ruleset
-  settings; see `docs/project-memory/08-risk.md` R-9 for the exact fix a
-  human needs to apply).
+- The exact required-checks list on `main`'s branch protection (R-9 is
+  resolved: `protected: true` re-verified via the branches API, but only
+  that boolean is readable from this session's tools; the 7-check list was
+  reported by the repo owner, not independently re-read — see
+  `docs/project-memory/08-risk.md` R-9).
 
 If any of these become checkable in a future session, do it once and
 update the relevant doc rather than re-flagging it as unknown every
