@@ -47,9 +47,16 @@ holds regardless of which GraphQL operation reaches it:
   `CORS_ORIGIN` env var; the default in `.env.example` is a single local
   dev origin, not `*`.
 - `express-rate-limit` caps the `/graphql` HTTP endpoint at 300 requests
-  per client per minute, mitigating basic request flooding. The WebSocket
-  transport is not currently rate-limited per-message; see
-  [08-risk.md](./08-risk.md) R-3.
+  per client per minute, mitigating basic request flooding.
+- The WebSocket transport bypasses Express middleware entirely (manual
+  `upgrade` handling, see ADR-004), so `express-rate-limit` doesn't reach
+  it. `src/graphql/wsRateLimiter.ts` instead enforces, at the upgrade
+  layer in `wsServer.ts`: a per-client sliding-window limit on connection
+  attempts (default 20 per 60s, keyed by `socket.remoteAddress`) and a
+  global concurrent-connection cap (default 1000), rejecting with
+  `429`/`503` before the connection is accepted. Per-message rate
+  limiting after a subscription is established is still not implemented;
+  see [08-risk.md](./08-risk.md) R-3.
 - `graphql-depth-limit` rejects any query/mutation/subscription document
   nested deeper than 10 levels, before execution — the standard mitigation
   for maliciously nested GraphQL queries designed to cause exponential
