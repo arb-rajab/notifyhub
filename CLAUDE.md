@@ -41,7 +41,12 @@ whether `--runInBand` got dropped somewhere.
 `docker ps` fails here (no daemon). Don't attempt `docker build` /
 `docker compose up` locally and don't burn a turn diagnosing why it
 "doesn't work" — it's a sandbox limitation, not a bug. Trust the `docker`
-job in `.github/workflows/ci.yml` for actual build verification.
+job in `.github/workflows/ci.yml` (required check "Docker build") for real
+verification. It builds the `runtime` image, then runs it the way
+`docker-compose.yml` does (`prisma migrate deploy`, then the server) against
+a Postgres service container, and fails unless `/healthz` answers, a
+GraphQL `channels` query reads the database, and the container exits 0 on
+SIGTERM. Container logs are printed in the job's "Container logs" step.
 
 ## Package versions in this repo's ecosystem, as of this session (Sept 2026)
 
@@ -227,10 +232,11 @@ The runtime image runs `npm prune --omit=dev`, so a devDependency imported
 by `src/` crashes `node dist/index.js` at startup with "Cannot find
 module". `graphql-tag` (used by every `src/graphql/typeDefs/*` file) was a
 devDependency until a fix after the Prisma 7 upgrade; the image had never
-been able to start. **The `docker` CI job only builds the image, it never
-runs it**, so CI won't catch this class of bug, and neither do the tests
-(they run with the full dev tree). When adding an import to `src/`, put the
-package in `dependencies`. To check by hand without Docker: build, then
-`npm prune --omit=dev`, then start `dist/index.js` against a real database.
+been able to start. The tests can't catch this (they run with the full dev
+tree), and CI's `docker` job used to only build the image. It now also
+smoke-tests it (see below), so this class of bug fails the "Docker build"
+check. When adding an import to `src/`, put the package in `dependencies`.
+To check by hand without Docker: build, then `npm prune --omit=dev`, then
+start `dist/index.js` against a real database.
 (`pino-pretty` is correctly a devDependency: `src/utils/logger.ts` only
 loads it when `NODE_ENV=development`.)

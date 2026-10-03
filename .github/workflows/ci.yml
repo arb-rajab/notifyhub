@@ -64,6 +64,20 @@ jobs:
     name: Docker build
     runs-on: ubuntu-latest
     needs: [lint-and-typecheck, test]
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: notifyhub
+          POSTGRES_PASSWORD: notifyhub_test_pw
+          POSTGRES_DB: notifyhub_smoke
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U notifyhub -d notifyhub_smoke"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v4
@@ -72,9 +86,53 @@ jobs:
           context: .
           target: runtime
           push: false
+          load: true
           tags: notifyhub:ci
           cache-from: type=gha
           cache-to: type=gha,mode=max
+      # Building isn't enough: a runtime import that `npm prune --omit=dev`
+      # removed (graphql-tag, fixed in #42) let this image build fine but
+      # crash on start. Run it the way docker-compose.yml does (migrate, then
+      # start) and check it serves /healthz, can query the database, and
+      # shuts down cleanly on SIGTERM.
+      - name: Smoke-test runtime image
+        run: |
+          docker run -d --name notifyhub --network host \
+            -e NODE_ENV=production \
+            -e PORT=4000 \
+            -e 'DATABASE_URL=postgresql://notifyhub:notifyhub_test_pw@localhost:5432/notifyhub_smoke?schema=public' \
+            -e JWT_SECRET=ci-smoke-secret-not-for-production-0123456789 \
+            notifyhub:ci sh -c 'npx prisma migrate deploy && exec node dist/index.js'
+
+          healthy=
+          for _ in $(seq 1 30); do
+            if curl -fsS http://localhost:4000/healthz; then healthy=1; break; fi
+            [ "$(docker inspect -f '{{.State.Running}}' notifyhub)" = true ] || break
+            sleep 2
+          done
+          if [ -z "$healthy" ]; then
+            echo "::error::Container never served /healthz"
+            exit 1
+          fi
+
+          response=$(curl -fsS http://localhost:4000/graphql \
+            -H 'content-type: application/json' \
+            -d '{"query":"{ channels { slug } }"}')
+          echo "$response"
+          if ! echo "$response" | grep -q '"channels":\[\]'; then
+            echo "::error::GraphQL query against the database failed"
+            exit 1
+          fi
+
+          docker stop --time 20 notifyhub
+          exit_code=$(docker inspect -f '{{.State.ExitCode}}' notifyhub)
+          if [ "$exit_code" != 0 ]; then
+            echo "::error::Container exited with code $exit_code on SIGTERM"
+            exit 1
+          fi
+      - name: Container logs
+        if: always()
+        run: docker logs notifyhub || true
 
   dependency-review:
     name: Dependency review (PR diff)
