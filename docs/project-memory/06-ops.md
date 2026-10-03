@@ -72,10 +72,10 @@ tokens are logged.
   `docker compose up` were written and reviewed for correctness but could
   not actually be executed or verified in this environment (`docker ps`
   fails with "cannot connect to the Docker daemon"). The `docker` job in
-  `.github/workflows/ci.yml` builds the image on every PR/push and is the
-  first real verification of the Dockerfile — check its status before
-  trusting the image builds clean. This is a sandbox limitation, not a
-  known defect.
+  `.github/workflows/ci.yml` builds the image on every PR/push and then
+  smoke-tests it (migrate, start, `/healthz`, a database-backed GraphQL
+  query, clean exit on SIGTERM) — it is the real verification of the
+  Dockerfile. This is a sandbox limitation, not a known defect.
 - **PostgreSQL was available locally** (via `apt`, with `sudo`), so unlike
   Docker, the database layer and every test in this session _were_
   verified against a real Postgres 16 server, not mocked or skipped.
