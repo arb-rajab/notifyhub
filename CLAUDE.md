@@ -53,9 +53,12 @@ this stack right now:
   `@as-integrations/express5` (which requires **Express 5**, also what
   this repo uses — Express 4 is now the `latest-4` dist-tag, not
   `latest`).
-- `graphql-ws` v5's Node/`ws` adapter import path is
-  **`graphql-ws/lib/use/ws`**, not the more commonly-documented
-  `graphql-ws/use/ws` — check `node_modules/graphql-ws/package.json`'s
+- `graphql-ws` v6's Node/`ws` adapter import path is
+  **`graphql-ws/use/ws`** (v5 used `graphql-ws/lib/use/ws`, which no longer
+  exists). It is only reachable through the package `exports` map, so
+  `tsconfig.json` uses `module`/`moduleResolution` **`Node16`** — the old
+  `Node` (node10) resolution can't see `exports` and fails with TS2307.
+  Don't revert that setting. Check `node_modules/graphql-ws/package.json`'s
   `exports` map before assuming an import path from older docs/examples.
 - The `prisma` (CLI) package's `latest` npm dist-tag pointed at an
   `8.0.0-rc.*` prerelease at the time of this session, while
