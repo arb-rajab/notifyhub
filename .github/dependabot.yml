@@ -10,7 +10,7 @@ updates:
     ignore:
       # ts-jest@29 peers on typescript ">=4.3 <7"; revisit when ts-jest supports TS 7.
       - dependency-name: typescript
-        update-types: ["version-update:semver-major"]
+        update-types: ['version-update:semver-major']
     open-pull-requests-limit: 10
 
   - package-ecosystem: docker
