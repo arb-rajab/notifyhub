@@ -32,7 +32,7 @@ export const notificationResolvers = {
         if (!isSubscribed) {
           throw forbiddenError('You must be subscribed to a channel to receive its notifications.');
         }
-        return pubsub.asyncIterator(notificationTopic(channel.id));
+        return pubsub.asyncIterableIterator(notificationTopic(channel.id));
       },
       resolve: (payload: { notificationReceived: Notification }) => payload.notificationReceived,
     },
