@@ -220,8 +220,17 @@ second time the same root cause would have caused it.
   `prisma` to devDependencies - the runtime image runs
   `prisma migrate deploy` (docker-compose), so it must stay a production
   dependency.
-- **Pre-existing, unrelated:** the production image's `node dist/index.js`
-  fails with `Cannot find module 'graphql-tag'` (a devDependency imported by
-  `src/graphql/typeDefs/*`, pruned by `npm prune --omit=dev`). The `docker`
-  CI job only builds the image, so CI doesn't catch it. Found while
-  simulating the runtime image during the Prisma 7 upgrade; not fixed there.
+
+## Anything `src/` imports at runtime must be in `dependencies`
+
+The runtime image runs `npm prune --omit=dev`, so a devDependency imported
+by `src/` crashes `node dist/index.js` at startup with "Cannot find
+module". `graphql-tag` (used by every `src/graphql/typeDefs/*` file) was a
+devDependency until a fix after the Prisma 7 upgrade; the image had never
+been able to start. **The `docker` CI job only builds the image, it never
+runs it**, so CI won't catch this class of bug, and neither do the tests
+(they run with the full dev tree). When adding an import to `src/`, put the
+package in `dependencies`. To check by hand without Docker: build, then
+`npm prune --omit=dev`, then start `dist/index.js` against a real database.
+(`pino-pretty` is correctly a devDependency: `src/utils/logger.ts` only
+loads it when `NODE_ENV=development`.)
