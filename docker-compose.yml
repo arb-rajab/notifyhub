@@ -33,7 +33,10 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    command: sh -c "npx prisma migrate deploy && node dist/index.js"
+    # `exec` makes node PID 1 so it receives `docker compose stop`'s SIGTERM
+    # and shuts down gracefully; without it `sh` is PID 1, ignores SIGTERM,
+    # and the server is SIGKILLed after the 10s timeout.
+    command: sh -c "npx prisma migrate deploy && exec node dist/index.js"
 
 volumes:
   notifyhub_postgres_data:
