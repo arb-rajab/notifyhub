@@ -170,9 +170,10 @@ join, not a fit for a schemaless document model.
 
 **Consequences.** Real migrations
 (`prisma/migrations/20260915211154_init/`), a generated, typed client
-(`@prisma/client`), and a schema that documents the domain on its own. The
-explicit risk this decision carries for the portfolio as a whole — that
-Postgres might already be over-represented elsewhere — is recorded in
+(`src/generated/prisma/`, since Prisma 7 — see ADR-009), and a schema that
+documents the domain on its own. The explicit risk this decision carries
+for the portfolio as a whole — that Postgres might already be
+over-represented elsewhere — is recorded in
 [08-risk.md](./08-risk.md) R-1 for the coordinator session to check, rather
 than silently assumed fine.
 
@@ -278,3 +279,70 @@ predicted. The cost is that this repo can never claim "verified working
 push delivery" from within itself; anyone needing that assurance must run
 the app on a physical device with real credentials outside this sandbox,
 by design.
+
+---
+
+## ADR-009: Prisma 7 — `prisma-client` generator (CommonJS), `@prisma/adapter-pg`, `prisma.config.ts`
+
+**Context.** Prisma 5.22 → 7.10 (two majors at once, `prisma` and
+`@prisma/client` kept a matched pair). Prisma 7 removes the Rust query
+engine: every `PrismaClient` needs a driver adapter, the datasource URL
+moves out of `schema.prisma` into `prisma.config.ts`, the CLI no longer
+loads `.env` itself, `migrate dev` no longer runs `generate`, and the
+`prisma-client-js` generator (client generated into `node_modules`) is
+deprecated in favour of `prisma-client` with a required `output` path. The
+upgrade guide also recommends switching the project to native ESM. Prisma 6's
+breaking changes (implicit m-n join-table primary keys, `Bytes` as
+`Uint8Array`, `NotFoundError` removal, new reserved model names) don't touch
+this schema or code; `prisma migrate diff` against a freshly migrated
+database confirms no new migration is needed.
+
+**Decision.**
+
+- Generator: `provider = "prisma-client"`,
+  `output = "../src/generated/prisma"`, `moduleFormat = "cjs"`,
+  `importFileExtension = ""`. The client is generated into `src/generated/prisma/` (gitignored, already
+  excluded from ESLint and coverage) and imported from
+  `src/generated/prisma/client`. **We stay on CommonJS** (ADR-007's reasons
+  still hold) instead of following the guide's `"type": "module"` advice;
+  `moduleFormat = "cjs"` is a supported generator mode. Bare
+  `importFileExtension` keeps the generated files' relative imports
+  resolvable by tsc (Node16, CJS), ts-jest and tsx alike.
+- `src/db/prisma.ts` builds the client with
+  `new PrismaPg({ connectionString: env.DATABASE_URL })`.
+- `prisma.config.ts` (repo root) holds the schema/migrations paths and
+  `datasource.url`. It reads `process.env.DATABASE_URL ?? ''` rather than
+  Prisma's `env()` helper, because `env()` throws when the variable is unset
+  and `prisma generate` must run without a database (Docker build stage,
+  the lint/typecheck CI job). Commands that connect still fail loudly
+  (`Connection url is empty`, exit 1).
+- CI runs `npx prisma generate` explicitly after `npm ci` in both the
+  lint/typecheck and test jobs; the Dockerfile already did. The runtime
+  image also gets `prisma.config.ts` so `prisma migrate deploy` (run by
+  `docker-compose.yml`) can find the URL.
+- `jest.config.js` makes ts-jest emit plain CommonJS. The generated client
+  loads its query compiler via dynamic `import()`, which `module: Node16`
+  preserves and Jest's VM can't execute without `--experimental-vm-modules`.
+  ts-jest is transpile-only here (`isolatedModules`), so this changes emit
+  only; type-checking stays in `npm run typecheck`. A per-path ts-jest
+  override for just `src/generated/**` does **not** work: ts-jest caches one
+  config per Jest project and silently ignores a second transform entry's
+  options.
+- `package.json` `overrides` pin `deepmerge-ts` ≥ 8.0.2 (GHSA-ggr8-5vv4-36mx,
+  via `@prisma/config`) and `mysql2` ≥ 3.24.5 (GHSA-3f6p-5ww8-9rcr,
+  GHSA-rgwj-5xj2-c3m3, used only by the `prisma` CLI's Studio MySQL path).
+  `prisma@7.10.0` pins the vulnerable versions exactly; both CI audit gates
+  (`dependency-review`, `npm audit --omit=dev`) fail without the overrides.
+  `@prisma/config` only calls `deepmerge()`, which deepmerge-ts 8's breaking
+  changes (`deepmergeInto` semantics, renamed metadata types) don't affect.
+  `prisma` itself stays a production dependency because the runtime image
+  runs `prisma migrate deploy`.
+
+**Consequences.** Fresh clones must run `npx prisma generate` before
+`typecheck`/`test`/`dev` (README and 06-ops updated). Revisit the
+`overrides` on each Prisma bump: drop each one once `prisma`'s own pinned
+version is patched (`npm ls deepmerge-ts mysql2`). Runtime differences to
+watch: connection pooling now comes from `pg` (`pg.Pool` defaults: max 10
+connections, no connection timeout, vs. Prisma 5's `num_cpus*2+1` pool and
+5 s timeout), and TLS certificate validation is stricter than the old Rust
+engine if `DATABASE_URL` ever uses `sslmode`.

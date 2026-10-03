@@ -4,6 +4,7 @@
 
 ```bash
 cp .env.example .env               # fill in DATABASE_URL / JWT_SECRET
+npx prisma generate                # generate the client into src/generated/prisma
 npx prisma migrate dev             # apply schema to your Postgres instance
 npm run dev                         # tsx watch, http://localhost:4000/graphql
 ```
@@ -52,7 +53,12 @@ hand-edited SQL against a running database:
 ```bash
 npx prisma migrate dev --name <description>   # dev: create + apply
 npx prisma migrate deploy                       # CI/prod: apply only, no drift check
+npx prisma generate                             # regenerate the client after any schema change
 ```
+
+Since Prisma 7 (ADR-009), `migrate dev` no longer runs `prisma generate`
+for you, and the CLI reads the database URL from `prisma.config.ts`
+(which loads `.env` itself via `dotenv/config`), not from `schema.prisma`.
 
 ## Logging
 

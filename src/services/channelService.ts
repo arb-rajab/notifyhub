@@ -1,4 +1,4 @@
-import type { PrismaClient } from '@prisma/client';
+import type { PrismaClient } from '../generated/prisma/client';
 import { conflictError, forbiddenError, notFoundError, userInputError } from '../utils/errors';
 
 const SLUG_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;

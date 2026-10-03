@@ -113,7 +113,8 @@ holds regardless of which GraphQL operation reaches it:
   1001), created explicitly in the final stage.
 - Multi-stage build: the `deps`/`build` stages (which include the full
   devDependency tree and source) are discarded; only `dist/`,
-  `node_modules` pruned to production dependencies, and `prisma/` reach
-  the runtime image.
+  `node_modules` pruned to production dependencies, `prisma/`, and
+  `prisma.config.ts` (needed by `prisma migrate deploy`) reach the runtime
+  image.
 - Base image is `node:22-bookworm-slim`, pinned to a Debian release rather
   than a rolling `latest` tag.

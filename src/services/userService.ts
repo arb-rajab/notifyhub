@@ -1,4 +1,4 @@
-import type { PrismaClient } from '@prisma/client';
+import type { PrismaClient } from '../generated/prisma/client';
 import { hashPassword, verifyPassword } from '../auth/password';
 import { signAccessToken } from '../auth/jwt';
 import { conflictError, userInputError } from '../utils/errors';
