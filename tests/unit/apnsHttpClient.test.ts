@@ -26,7 +26,7 @@ function startFakeApnsServer(
 ): Promise<{ server: Http2Server; baseUrl: string; close: () => Promise<void> }> {
   return new Promise((resolve) => {
     const server = http2.createServer();
-    server.on('stream', (stream, headers) => {
+    server.on('stream', (stream: ServerHttp2Stream, headers: IncomingHttpHeaders) => {
       let rawBody = '';
       stream.setEncoding('utf8');
       stream.on('data', (chunk: string) => {
