@@ -60,13 +60,15 @@ this stack right now:
   `Node` (node10) resolution can't see `exports` and fails with TS2307.
   Don't revert that setting. Check `node_modules/graphql-ws/package.json`'s
   `exports` map before assuming an import path from older docs/examples.
-- The `prisma` (CLI) package's `latest` npm dist-tag pointed at an
-  `8.0.0-rc.*` prerelease at the time of this session, while
-  `@prisma/client`'s `latest` tag was a stable `7.x`. This repo pins both
-  `prisma` and `@prisma/client` to the same matched stable `5.22.x` pair
-  instead of trusting `latest`. **Before bumping either, check
-  `npm view <pkg> dist-tags` for both and keep them matched** — a
-  mismatched CLI/client major will fail confusingly, not obviously.
+- The `prisma` (CLI) package's `latest` npm dist-tag points at an
+  `8.0.0-rc.*` prerelease (as of Oct 2026), while `@prisma/client`'s
+  `latest` tag is the stable `7.x`. This repo pins `prisma`,
+  `@prisma/client` and `@prisma/adapter-pg` to the same matched stable
+  `7.10.x` set instead of trusting `latest` (upgraded from `5.22.x` - see
+  ADR-009). **Before bumping any of them, check `npm view <pkg> dist-tags`
+  for all three and keep them matched** - a mismatched CLI/client major
+  fails confusingly, not obviously (Dependabot bumps them one at a time;
+  those PRs can't go green on their own).
 
 Don't re-run `npm view ... version` for every package "just to check" at
 the start of a session — the pins in `package.json`/`package-lock.json`
@@ -123,7 +125,8 @@ read ADR-008 in `docs/project-memory/07-decisions.md` first.
   `notifyhub`/`notifyhub_dev`/`notifyhub_test` roles/DBs from the section
   above — `prisma migrate dev` was only ever run by hand against
   `notifyhub_dev`. Run `DATABASE_URL=postgresql://notifyhub:notifyhub_dev_pw@localhost:5432/notifyhub_test?schema=public
-npx prisma migrate deploy` once before `npm test`, or you'll see a
+npx prisma migrate deploy` once before `npm test` (plus `npx prisma generate`,
+  per the Prisma 7 section below), or you'll see a
   confusing "table `device_tokens` does not exist" error on every test
   file, not just device-token ones (because `tests/setup/db.ts`'s
   `resetDatabase()` touches it in every test's `beforeEach`).
@@ -186,3 +189,39 @@ tooling either. If the job ever fails again with that same "Dependency
 graph" error, that setting was toggled back off — don't reflexively
 re-remove the job; check with the user first, since this is now the
 second time the same root cause would have caused it.
+
+## Prisma 7 specifics - read ADR-009 before changing any of these
+
+- **The client is generated, not installed.** It lives in
+  `src/generated/prisma/` (gitignored) and is imported from
+  `src/generated/prisma/client` - there is no `@prisma/client` import in
+  app code any more, and no postinstall hook generates it. A fresh clone or
+  container needs `npx prisma generate` after `npm ci` or `typecheck`/
+  `test`/`dev` fail with "Cannot find module '../generated/prisma/client'".
+  `migrate dev` doesn't run `generate` for you either (Prisma 7 change).
+- **The DB URL lives in `prisma.config.ts`, not `schema.prisma`.** It uses
+  `process.env.DATABASE_URL ?? ''` on purpose: Prisma's `env()` helper throws
+  when the var is unset, which breaks `prisma generate` in the Docker build
+  stage and the lint/typecheck CI job. Don't "tidy" it to `env()`.
+- **Still CommonJS.** The generator is set to `moduleFormat = "cjs"` and
+  `importFileExtension = ""`; don't switch the repo to `"type": "module"`
+  just because the Prisma 7 upgrade guide suggests it (ADR-007).
+- **`jest.config.js` overrides ts-jest to emit `module: CommonJS`** so the
+  generated client's dynamic `import()` becomes `require()`. Without it every
+  DB-touching test fails with "A dynamic import callback was invoked without
+  --experimental-vm-modules". A per-path transform for only
+  `src/generated/**` does not work: ts-jest caches one config per Jest
+  project and ignores a second entry's options.
+- **`package.json` `overrides` for `deepmerge-ts` and `mysql2` are security
+  fixes**, not cruft: `prisma@7.10.0` pins vulnerable versions exactly and
+  both `Dependency review (PR diff)` and `npm audit --omit=dev` fail without
+  them. On each Prisma bump, check `npm ls deepmerge-ts mysql2` and drop an
+  override once Prisma's own pin is patched. Don't "fix" the audit by moving
+  `prisma` to devDependencies - the runtime image runs
+  `prisma migrate deploy` (docker-compose), so it must stay a production
+  dependency.
+- **Pre-existing, unrelated:** the production image's `node dist/index.js`
+  fails with `Cannot find module 'graphql-tag'` (a devDependency imported by
+  `src/graphql/typeDefs/*`, pruned by `npm prune --omit=dev`). The `docker`
+  CI job only builds the image, so CI doesn't catch it. Found while
+  simulating the runtime image during the Prisma 7 upgrade; not fixed there.

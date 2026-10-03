@@ -1,4 +1,4 @@
-import type { Notification, Channel } from '@prisma/client';
+import type { Notification, Channel } from '../../generated/prisma/client';
 
 export interface PushEvent {
   channel: Channel;

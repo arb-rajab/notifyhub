@@ -79,7 +79,10 @@ See ADR-001 and ADR-002 in [07-decisions.md](./07-decisions.md).
   `connection_init` handshake. Both funnel into the same
   `verifyAccessToken` and the same `GraphQLContext` shape, so authorization
   logic in resolvers is transport-agnostic.
-- **`src/db/prisma.ts`** — a single `PrismaClient` instance (Postgres).
+- **`src/db/prisma.ts`** — a single `PrismaClient` instance (Postgres),
+  connected through the `@prisma/adapter-pg` driver adapter. The client
+  itself is generated into `src/generated/prisma/` (gitignored; see
+  ADR-009) and imported from `src/generated/prisma/client`.
 - **`prisma/schema.prisma`** — `User`, `Channel`, `Subscription` (the
   user↔channel join table), `Notification`.
 

@@ -24,6 +24,9 @@ RUN addgroup --system --gid 1001 notifyhub && \
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/prisma ./prisma
+# Prisma 7 reads the datasource URL from prisma.config.ts (not schema.prisma),
+# so `prisma migrate deploy` in this image (see docker-compose.yml) needs it.
+COPY --from=build /app/prisma.config.ts ./
 COPY package.json ./
 
 USER notifyhub

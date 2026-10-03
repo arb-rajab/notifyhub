@@ -1,4 +1,4 @@
-import type { Channel } from '@prisma/client';
+import type { Channel } from '../../generated/prisma/client';
 import type { GraphQLContext } from '../context';
 import type { CreateChannelInput } from '../../services/channelService';
 import { requireUser } from './user';

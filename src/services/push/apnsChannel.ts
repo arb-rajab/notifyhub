@@ -1,4 +1,4 @@
-import type { PrismaClient } from '@prisma/client';
+import type { PrismaClient } from '../../generated/prisma/client';
 import { logger } from '../../utils/logger';
 import type { PushChannel, PushEvent } from './types';
 import { loadApnsConfigFromEnv } from './apns/config';

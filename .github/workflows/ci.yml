@@ -21,6 +21,9 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      # Prisma 7's client is generated into src/generated (gitignored), not by
+      # an @prisma/client postinstall hook, so typecheck needs it generated.
+      - run: npx prisma generate
       - run: npm run format:check
       - run: npm run lint
       - run: npm run typecheck
@@ -52,6 +55,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - run: npx prisma generate
       - run: npx prisma migrate deploy
       - run: npm test -- --coverage
       - run: npm run build

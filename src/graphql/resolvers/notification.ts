@@ -1,4 +1,4 @@
-import type { Notification } from '@prisma/client';
+import type { Notification } from '../../generated/prisma/client';
 import type { GraphQLContext } from '../context';
 import type { PublishNotificationInput } from '../../services/notificationService';
 import { requireUser } from './user';

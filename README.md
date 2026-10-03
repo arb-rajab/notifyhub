@@ -16,6 +16,7 @@ real time over an open GraphQL subscription.
 ```bash
 cp .env.example .env               # fill in DATABASE_URL / JWT_SECRET
 npm install
+npx prisma generate                # generate the client into src/generated/prisma
 npx prisma migrate dev             # apply schema to Postgres
 npm run dev                         # http://localhost:4000/graphql
 ```
@@ -98,6 +99,7 @@ behind the real-time design.
 | `npm run build` / `npm start`        | Compile to `dist/` and run it                        |
 | `npm test`                           | Run the full test suite (needs a reachable Postgres) |
 | `npm run lint` / `npm run typecheck` | Static checks                                        |
+| `npm run prisma:generate`            | Regenerate the Prisma client (`src/generated/`)      |
 | `npm run prisma:migrate`             | Create + apply a new migration                       |
 
 ## License
