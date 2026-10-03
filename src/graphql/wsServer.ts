@@ -1,7 +1,8 @@
 import type { Server as HttpServer, IncomingMessage } from 'http';
 import type { Socket } from 'net';
 import { WebSocketServer } from 'ws';
-import { useServer } from 'graphql-ws/lib/use/ws';
+import { useServer } from 'graphql-ws/use/ws';
+import type { Context } from 'graphql-ws';
 import type { GraphQLSchema } from 'graphql';
 import { schema as defaultSchema } from './schema';
 import { authenticateFromConnectionParams } from '../auth/extractUser';
@@ -62,7 +63,7 @@ export function createWebSocketServer(
   const disposable = useServer(
     {
       schema,
-      context: (ctx) => {
+      context: (ctx: Context) => {
         const user = authenticateFromConnectionParams(
           ctx.connectionParams as Record<string, unknown> | undefined,
         );
