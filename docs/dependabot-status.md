@@ -4,10 +4,10 @@ _Last updated: 2026-10-08. Maintained during the Dependabot clean-up pass; updat
 
 ## Configuration
 
-- Ecosystems covered: npm (`/`), docker (`/`), github-actions (`/`).
+- Ecosystems covered: npm (`/`), docker (`/`), github-actions (`/`), docker-compose (`/`).
 - Grouping: npm development dependencies are grouped as `dev-dependencies`.
 - Schedule: weekly.
-- Ignore rules: `typescript` majors (ts-jest peer range); Docker `node` 25.x (non-LTS).
+- Ignore rules: `typescript` majors (ts-jest peer range); Docker `node` 25.x (non-LTS); docker-compose image majors (stateful services need a deliberate migration).
 
 ## State at last update
 
