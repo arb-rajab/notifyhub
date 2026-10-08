@@ -26,6 +26,7 @@ _Last updated: 2026-10-08. Maintained during the Dependabot clean-up pass; updat
 - GitHub Actions pins refreshed by hand on 2026-10-08: `actions/checkout` v4 -> v7 and `actions/setup-node` v6 -> v7, matching the other repos. `actions/dependency-review-action` stays on v4 (no newer major could be confirmed from here).
 - A manual OSV query of `package-lock.json` (2026-10-08) shows one dev-only moderate finding with no patched release: `sprintf-js` 1.0.3 (GHSA-hp3w-g68c-fv3c, affected through 1.1.3). `npm audit --omit=dev` in CI does not cover dev dependencies.
 - A Dependabot security alert exists (`security/dependabot/2`); alerts can't be listed with the tooling used here, so check the repo Security tab.
+- `handlebars` 4.7.9 -> 4.7.10 in `package-lock.json` (2026-10-08, dev-only via the Jest coverage toolchain): three advisories published that day (GHSA-8r5x-fm3f-whwj and GHSA-p8wg-vrv2-v86f, both critical; GHSA-xw65-4hp5-5hc7) failed the `dependency-scan` job on PR #58. Fixed by a lockfile-only update; osv-scanner is clean again.
 - Merge policy (deliberate choice by the repo owner, 2026-10-08): every PR, major-version dependency bumps included, is merged as soon as all of its required checks are green, confirmed per PR. This repo is a code showcase with no business or sensitive dependency, so green checks are the only gate. Red, pending or conflicted PRs are fixed or closed instead.
 
 ## Deferred (not re-raised each pass)
