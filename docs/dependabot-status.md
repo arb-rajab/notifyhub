@@ -4,13 +4,14 @@ _Last updated: 2026-10-08. Maintained during the Dependabot clean-up pass; updat
 
 ## Configuration
 
-- Ecosystems covered: npm, docker, github-actions.
-- Grouping: `minor-and-patch` updates are grouped; weekly schedule.
+- Ecosystems covered: npm (`/`), docker (`/`), github-actions (`/`).
+- Grouping: npm development dependencies are grouped as `dev-dependencies`.
+- Schedule: weekly.
 - Ignore rules: `typescript` majors (ts-jest peer range); Docker `node` 25.x (non-LTS).
 
 ## State at last update
 
-- Open Dependabot PRs: 0 (all merged or closed after reading each PR's checks).
+- Open Dependabot PRs: 0 (each merged or closed only after reading its checks).
 - Default-branch CI: green at last check.
 
 ## Time-limited exemptions
