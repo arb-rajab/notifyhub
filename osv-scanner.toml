@@ -1,0 +1,21 @@
+# osv-scanner configuration for the "Dependency vulnerability scan" CI job
+# (.github/workflows/security.yml).
+#
+# Every entry here is a dated exception, not a permanent suppression: once
+# `ignoreUntil` passes, the finding fails the scan again and a human has to
+# either renew the entry (re-confirming the reason still holds) or delete it
+# (because a fix shipped). Entries are by advisory ID, so any NEW advisory
+# against the same package still fails the scan.
+
+[[IgnoredVulns]]
+id = "GHSA-hp3w-g68c-fv3c"
+ignoreUntil = 2026-11-15
+reason = """
+sprintf-js denial of service through unbounded precision specifiers (CVE-2026-97058),
+moderate severity. sprintf-js 1.0.3 is reached only as a dev dependency
+(package-lock.json, "dev": true) of the lint/build/test toolchain; it is not in the
+production image, which installs with `npm prune --omit=dev`. The advisory lists every
+version through 1.1.3 as affected and names no patched release, so there is nothing to
+upgrade to. Re-check before the expiry date: renew if still unfixed upstream, remove
+this entry the moment a patched release ships.
+"""
