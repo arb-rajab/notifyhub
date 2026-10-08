@@ -16,7 +16,7 @@ _Last updated: 2026-10-08. Maintained during the Dependabot clean-up pass; updat
 
 ## Time-limited exemptions
 
-- `osv-scanner.toml` (proposed, awaiting owner approval): dev-only `sprintf-js` 1.0.3 (GHSA-hp3w-g68c-fv3c, moderate, no patched release), `ignoreUntil` 2026-11-15.
+- `osv-scanner.toml` (approved by the repo owner 2026-10-08, merged in #56): dev-only `sprintf-js` 1.0.3 (GHSA-hp3w-g68c-fv3c, moderate, no patched release), `ignoreUntil` 2026-11-15.
 
 ## Notes
 
