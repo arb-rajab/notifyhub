@@ -17,6 +17,10 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    ignore:
+      # Node 25 is a non-LTS (odd) release line; stay on LTS images only.
+      - dependency-name: node
+        versions: ['25.x']
 
   - package-ecosystem: github-actions
     directory: /
