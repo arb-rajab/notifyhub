@@ -13,6 +13,7 @@ Instead, use GitHub's private vulnerability reporting (Security tab →
 "Report a vulnerability").
 
 Please include:
+
 - A description of the vulnerability and its potential impact
 - Steps to reproduce
 - The affected commit
