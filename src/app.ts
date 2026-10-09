@@ -21,9 +21,11 @@ export function createApp(apolloServer: ApolloServer<GraphQLContext>): Express {
   const app = express();
 
   app.use(helmet());
+  // '*' is sent as a literal wildcard rather than reflecting the caller's Origin. Credentials are
+  // never allowed (auth is the Authorization header), so the wildcard grants nothing extra.
   app.use(
     cors({
-      origin: corsOrigins.includes('*') ? true : corsOrigins,
+      origin: corsOrigins.includes('*') ? '*' : corsOrigins,
     }),
   );
 
